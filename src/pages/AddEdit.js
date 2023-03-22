@@ -17,13 +17,47 @@ const initialState = {
 const AddEdit = () => {
 
     const [state, setState] = useState(initialState);
-    const [date, setData] = useState({});
+    const [data, setData] = useState({});
     // console.log(state.name);
     const { name, email, contact } = state;
 
 
     const history =useHistory();
     
+    const {id} = useParams();
+
+    
+    useEffect(()=>{
+        fireDb.child("contacts").on("value" , (Records)=>{
+            if(Records.val() !== null){
+                //get all data from Records.val();
+                const data1=Records.val();
+                //then set that record to data hook
+                setData({...data1});
+                // console.log("data from fb",Records.val());
+            }
+            else{
+                setData({});
+            }
+        });
+        return()=>{
+            setData({});
+        }
+    },[id]);
+
+    useEffect(()=>{
+        if(id){
+            setState({...data[id]})
+        }
+        else{
+            setState({...initialState})
+        }
+        return()=>{
+            setState({...initialState})
+        }
+
+    },[id, data])
+     
     
     const handleInputChange =(e)=>{
         const {name,value}=e.target;
@@ -37,14 +71,29 @@ const AddEdit = () => {
             toast.error("Please provide each input...");
         }
         else{
-            fireDb.child("contacts").push(state , (err) =>{
-                if(err){
-                    toast.error(err);
-                }
-                else{
-                    toast.success("success");
-                }
-            });
+
+            if(!id){
+                fireDb.child("contacts").push(state , (err) =>{
+                    if(err){
+                        toast.error(err);
+                    }
+                    else{
+                        toast.success("success");
+                    }
+                });
+
+            }else{
+                fireDb.child(`contacts/${id}`).set(state , (err) =>{
+                    if(err){
+                        toast.error(err);
+                    }
+                    else{
+                        toast.success("Update successfully");
+                    }
+                });
+
+            }
+       
             setTimeout(()=>history.push("/"),500)
 
         }
@@ -67,24 +116,24 @@ const AddEdit = () => {
                     id='name'
                     name="name"
                     placeholder='your name ....'
-                    value={name}
+                    value={name || ""}
                     onChange={handleInputChange} />
                 <label htmlFor='email'>Email</label>
                 <input type="text"
                     id='email'
                     name="email"
                     placeholder='your email ....'
-                    value={email}
+                    value={email || ""}
                     onChange={handleInputChange} />
                 <label htmlFor='contact'>Contact</label>
                 <input type="number"
                     id='contact'
                     name="contact"
                     placeholder='your contact ....'
-                    value={contact}
+                    value={contact || ""}
                     onChange={handleInputChange} />
 
-                <input type="submit" value="Save" />
+                <input type="submit" value={id ? "Update" : "Save"} />
             </form>
 
         </div>
